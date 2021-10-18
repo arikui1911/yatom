@@ -8,6 +8,19 @@ RSpec.describe Yatom::Lexer do
     end
 
     context '基本文字列' do
+      #where(:case_name, :tag, :value, :src) do
+      #  [
+      #    ['ふつうの内容', :BASIC_STRING, 'hoge', %Q`"hoge"`],
+      #  ]
+      #end
+      #
+      #with_them do
+      #  it do
+      #    lexer = Yatom::Lexer.new(src, '-')
+      #    expect(lexer.next_token).to have_attributes(tag: tag, value: value, lineno: 1, column: 1)
+      #  end
+      #end
+
       it 'ふつうの内容' do
         lexer = Yatom::Lexer.new('"hoge"', '-')
         expect(lexer.next_token).to have_attributes(tag: :BASIC_STRING, value: 'hoge', lineno: 1, column: 1)
@@ -36,25 +49,17 @@ RSpec.describe Yatom::Lexer do
       end
 
       context '有効でないUTF-8文字を含む' do
-        let(:src){ %Q`"ho#{ch}ge"` }
-        subject{ Yatom::Lexer.new(src, '-').next_token }
-        shared_examples :on_invalid_char do
-          # NOTE: is_expected を使うと例外が補足できない
-          it { expect{ subject }.to raise_error(Yatom::SyntaxError) }
-        end
-
-        invalid_chars = [
+        where(invalid_char: [
           "\u0000", "\u0001", "\u0002", "\u0003", "\u0004", "\u0005", "\u0006", "\u0007", "\u0008",
           "\u000A", "\u000B", "\u000C", "\u000D", "\u000E", "\u000F",
           "\u0010", "\u0011", "\u0012", "\u0013", "\u0014", "\u0015", "\u0016", "\u0017", "\u0018", "\u0019", 
           "\u001A", "\u001B", "\u001C", "\u001D", "\u001E", "\u001F",
           "\u007F",
-        ]
+        ])
 
-        invalid_chars.each do |ch|
-          context 'U+%04X' % ch.ord do
-            let(:ch){ ch }
-            it_behaves_like :on_invalid_char
+        with_them do
+          it do
+            expect { Yatom::Lexer.new(%Q`"ho#{invalid_char}ge"`, '-').next_token }.to raise_error(Yatom::SyntaxError)
           end
         end
       end
